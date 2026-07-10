@@ -37,7 +37,10 @@ import androidx.navigation.navArgument
 import com.android.axion.axthemestore.viewmodel.ThemeStoreViewModel
 
 @Composable
-fun MainScreen(viewModel: ThemeStoreViewModel) {
+fun MainScreen(
+    viewModel: ThemeStoreViewModel,
+    onBackClick: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
@@ -87,6 +90,7 @@ fun MainScreen(viewModel: ThemeStoreViewModel) {
         composable("themes") {
             ThemeStoreScreen(
                 viewModel = viewModel,
+                onBackClick = onBackClick,
                 onThemeClick = { theme ->
                     navController.navigate("detail/${theme.id}")
                 },

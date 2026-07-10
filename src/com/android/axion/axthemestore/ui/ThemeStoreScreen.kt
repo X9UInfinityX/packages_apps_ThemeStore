@@ -70,7 +70,9 @@ import com.android.axion.axthemestore.ui.components.ThemePackagePreview
 import com.android.axion.axthemestore.viewmodel.ThemeStoreUiState
 import com.android.axion.axthemestore.viewmodel.ThemeStoreViewModel
 import com.android.axion.axthemestore.data.ThumbnailPreloader
+import com.android.axion.compose.scaffold.AxionLargeTopAppBar
 import com.android.axion.compose.scaffold.AxionScaffold
+import com.android.axion.compose.scaffold.ExpressiveBackButton
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import kotlinx.coroutines.Dispatchers
@@ -80,6 +82,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ThemeStoreScreen(
     viewModel: ThemeStoreViewModel,
+    onBackClick: () -> Unit = {},
     onThemeClick: (Theme) -> Unit,
     onNavigateToCategory: (String) -> Unit = {},
     onNavigateToInstalledComponents: () -> Unit = {}
@@ -90,42 +93,34 @@ fun ThemeStoreScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
     
-    Scaffold { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (isSearchActive) {
-                SearchScreen(
-                    viewModel = viewModel,
-                    searchQuery = searchQuery,
-                    onSearchChange = { 
-                        searchQuery = it
-                        viewModel.searchThemes(it)
-                    },
-                    onBack = { 
-                        isSearchActive = false
-                        searchQuery = ""
-                        viewModel.searchThemes("")
-                    },
-                    themes = viewModel.getFilteredThemes(),
-                    themeStates = themeStates,
-                    onThemeClick = onThemeClick
-                )
-            } else {
-                BrowseScreen(
-                    uiState = uiState,
-                    themeStates = themeStates,
-                    onSearchClick = { isSearchActive = true },
-                    onRefresh = { viewModel.loadThemes(forceRefresh = true) },
-                    onThemeClick = onThemeClick,
-                    onNavigateToCategory = onNavigateToCategory,
-
-                    onNavigateToInstalledComponents = onNavigateToInstalledComponents
-                )
-            }
-        }
+    if (isSearchActive) {
+        SearchScreen(
+            viewModel = viewModel,
+            searchQuery = searchQuery,
+            onSearchChange = { 
+                searchQuery = it
+                viewModel.searchThemes(it)
+            },
+            onBack = { 
+                isSearchActive = false
+                searchQuery = ""
+                viewModel.searchThemes("")
+            },
+            themes = viewModel.getFilteredThemes(),
+            themeStates = themeStates,
+            onThemeClick = onThemeClick
+        )
+    } else {
+        BrowseScreen(
+            uiState = uiState,
+            themeStates = themeStates,
+            onBackClick = onBackClick,
+            onSearchClick = { isSearchActive = true },
+            onRefresh = { viewModel.loadThemes(forceRefresh = true) },
+            onThemeClick = onThemeClick,
+            onNavigateToCategory = onNavigateToCategory,
+            onNavigateToInstalledComponents = onNavigateToInstalledComponents
+        )
     }
 }
 
@@ -402,6 +397,7 @@ private fun SearchScreen(
 private fun BrowseScreen(
     uiState: ThemeStoreUiState,
     themeStates: Map<String, ThemeInstallState>,
+    onBackClick: () -> Unit,
     onSearchClick: () -> Unit,
     onRefresh: () -> Unit,
     onThemeClick: (Theme) -> Unit,
@@ -414,14 +410,15 @@ private fun BrowseScreen(
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surfaceBright,
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+        ),
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.themes),
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
+            AxionLargeTopAppBar(
+                title = stringResource(R.string.themes),
+                scrollBehavior = scrollBehavior,
+                containerColor = MaterialTheme.colorScheme.surfaceBright,
+                navigationIcon = { ExpressiveBackButton(onClick = onBackClick) },
                 actions = {
                     IconButton(onClick = onSearchClick) {
                         Icon(
@@ -436,15 +433,14 @@ private fun BrowseScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
-                scrollBehavior = scrollBehavior,
             )
         },
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
             when {
                 uiState.isLoading -> LoadingState()
                 uiState.error != null -> ErrorState(
@@ -511,7 +507,7 @@ private fun DashboardContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
+            .padding(top = 8.dp, bottom = 24.dp),
     ) {
         if (featuredThemes.isNotEmpty()) {
             FeaturedCarousel(
