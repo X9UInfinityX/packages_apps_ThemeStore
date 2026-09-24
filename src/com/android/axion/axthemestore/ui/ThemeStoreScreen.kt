@@ -97,11 +97,11 @@ fun ThemeStoreScreen(
         SearchScreen(
             viewModel = viewModel,
             searchQuery = searchQuery,
-            onSearchChange = { 
+            onSearchChange = {
                 searchQuery = it
                 viewModel.searchThemes(it)
             },
-            onBack = { 
+            onBack = {
                 isSearchActive = false
                 searchQuery = ""
                 viewModel.searchThemes("")
